@@ -74,6 +74,11 @@ reprint_all <- lapply(1:nrow(reprint_list), FUN = function(i){
   } else if(card$reprint_of %in% names(balanceinf)){
     card$points <- balanceinf[card$reprint_of][[1]]
   }
+  if(!is.null(card$subtypes)){
+    card$subtypes <- lapply(card$subtypes, FUN = function(subtype){
+      subtype
+    })
+  }
   card <- card[order(names(card),decreasing=FALSE)]
   card
 })
