@@ -1,9 +1,16 @@
-reprint_list <- read.csv('reprints_list.csv')
 
+library('dplyr')
+#install.packages('Rcpp')
+#setwd("swdestiny_scripts")
+reprint_list <- readxl::read_xlsx('Reprints1and2.xlsx') %>% data.frame() %>%
+  select(5:8)
+names(reprint_list) <- c('Cards','Set','Type','Aff')
+reprint_list <- reprint_list[!is.na(reprint_list$Cards),] %>% data.frame()
 order <- c('Character','Downgrade','Event','Plot',
-           'Support','Upgrade','Battlefield', 'Bonus')
+           'Support','Upgrade','Battlefield')
 Affiliations <- c('Villain','Hero','Neutral')
-
+cardtype <- 'Character'
+affi <- 'Villain'
 reprint_list <- lapply(order, FUN = function(cardtype){
   tmp <- reprint_list[reprint_list$Type==cardtype,]
   lapply(Affiliations, FUN = function(affi){
@@ -11,12 +18,14 @@ reprint_list <- lapply(order, FUN = function(cardtype){
     arrange(temp, by = Cards)
   }) %>% bind_rows()
 }) %>% bind_rows()
+reprint_list$Set[is.na(reprint_list$Set)] <- ''
 
-swdb <- 'C:/Users/marlog/Documents/swdestinydb-json-data-ml/set'
+swdb <- 'set'
 library(rjson)
 library(jsonlite)
 library(dplyr)
 library(pbapply)
+unlink('set/EoD.json')
 files <- list.files(swdb,full.names = TRUE)
 allcards <- pbapply::pblapply(files, FUN = function(file){
   cards <- rjson::fromJSON(file = file)
@@ -40,7 +49,7 @@ inf <- balance[[3]]
 arh <- balance[[4]]
 balanceinf <- inf$data$balance
 balancearh <- arh$data$balance
-
+i <- 28
 lookup$name[grepl(' Vu',lookup$name)] <- 'Deja Vu'
 reprint_all <- lapply(1:nrow(reprint_list), FUN = function(i){
   cardname <- reprint_list$Cards[i]
@@ -50,7 +59,7 @@ reprint_all <- lapply(1:nrow(reprint_list), FUN = function(i){
   if(reprint_list$Set[i]==''){
     tmp <- tmp %>% filter(as.numeric(set_num) == min(as.numeric(tmp$set_num)))
   } else {
-    tmp <- tmp %>% filter(reprint_list$Set[i] == tmp$set)
+    tmp <- tmp %>% filter(tolower(reprint_list$Set[i]) == tolower(tmp$set))
   }
   myset <- allcards[names(allcards)==tmp$set]
 
@@ -89,7 +98,7 @@ write(gsub('\\\\/','/',json_file),
       file = 'set/EoD.json')
 
 # Now move the images
-img_fol <- 'C:\\Users\\marlog\\Documents\\swdimg\\swdestinydb-img\\en'
+img_fol <- 'swdimg'
 old_files <- list.files(file.path(img_fol,'104'), full.names = TRUE)
 unlink(old_files)
 files_to_move <- pbapply::pblapply(reprint_all, FUN = function(card){
